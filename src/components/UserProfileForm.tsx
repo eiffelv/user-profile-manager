@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, UserFormData, FormErrors } from '../lib/types';
 import { Upload, User as UserIcon, X } from 'lucide-react';
 
@@ -21,13 +21,11 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({
     phoneNumber: user?.phoneNumber || '',
     bio: user?.bio || '',
     avatarUrl: user?.avatarUrl || '',
-    dateOfBirth: user?.dateOfBirth || '',
+    dateOfBirth: user?.dateOfBirth ? user.dateOfBirth.split('T')[0] : '',
     location: user?.location || '',
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
-  const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -37,7 +35,7 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({
         phoneNumber: user.phoneNumber || '',
         bio: user.bio || '',
         avatarUrl: user.avatarUrl || '',
-        dateOfBirth: user.dateOfBirth || '',
+        dateOfBirth: user.dateOfBirth ? user.dateOfBirth.split('T')[0] : '',
         location: user.location || '',
       });
     }
@@ -62,8 +60,8 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({
     }
 
     // Phone number validation (optional)
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
-    if (formData.phoneNumber && !phoneRegex.test(formData.phoneNumber.replace(/[\s\-\(\)]/g, ''))) {
+    const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
+    if (formData.phoneNumber && !phoneRegex.test(formData.phoneNumber.replace(/[\s\-()]/g, ''))) {
       newErrors.phoneNumber = 'Please enter a valid phone number';
     }
 
@@ -85,45 +83,6 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  };
-
-  const handleFileUpload = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      setErrors(prev => ({ ...prev, avatar: 'Please select an image file' }));
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors(prev => ({ ...prev, avatar: 'Image size should be less than 5MB' }));
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setFormData(prev => ({ ...prev, avatarUrl: e.target?.result as string }));
-      setErrors(prev => ({ ...prev, avatar: undefined }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileUpload(e.dataTransfer.files[0]);
     }
   };
 
@@ -153,7 +112,7 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Avatar Upload */}
+          {/* Avatar Upload - Temporarily Disabled */}
           <div className="flex flex-col items-center space-y-4">
             <div className="relative">
               {formData.avatarUrl ? (
@@ -167,40 +126,18 @@ const UserProfileForm: React.FC<UserProfileFormProps> = ({
                   <UserIcon className="w-10 h-10 text-gray-400" />
                 </div>
               )}
-              {formData.avatarUrl && (
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, avatarUrl: '' }))}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
             </div>
 
-            <div
-              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all ${
-                dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-600">
-                Drag and drop an image, or <span className="text-blue-600">click to browse</span>
+            {/* File upload temporarily disabled */}
+            <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center bg-gray-50">
+              <Upload className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-400">
+                Image upload feature coming soon
               </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
-                className="hidden"
-              />
+              <p className="text-xs text-gray-400 mt-1">
+                Currently using existing avatar URLs only
+              </p>
             </div>
-            {errors.avatar && <p className="text-red-500 text-sm">{errors.avatar}</p>}
           </div>
 
           {/* Form Fields */}

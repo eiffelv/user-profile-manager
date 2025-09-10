@@ -1,17 +1,19 @@
 import React from 'react';
 import { User } from '../lib/types';
-import { Edit, Trash2, Mail, Phone, MapPin, Calendar, User as UserIcon } from 'lucide-react';
+import { Edit, Trash2, Mail, Phone, MapPin, Calendar, User as UserIcon, QrCode } from 'lucide-react';
 
 interface UserProfileCardProps {
   user: User;
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;
+  onGenerateQR?: (user: User) => void; // New prop for QR code generation
 }
 
 const UserProfileCard: React.FC<UserProfileCardProps> = ({
   user,
   onEdit,
-  onDelete
+  onDelete,
+  onGenerateQR
 }) => {
   const formatDate = (dateString?: string): string => {
     if (!dateString) return '';
@@ -69,6 +71,15 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
         
         {/* Action Buttons */}
         <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          {onGenerateQR && (
+            <button
+              onClick={() => onGenerateQR(user)}
+              className="bg-white bg-opacity-20 backdrop-blur-sm text-white p-2 rounded-lg hover:bg-opacity-30 transition-all"
+              title="Generate QR Code"
+            >
+              <QrCode className="w-4 h-4" />
+            </button>
+          )}
           <button
             onClick={() => onEdit(user)}
             className="bg-white bg-opacity-20 backdrop-blur-sm text-white p-2 rounded-lg hover:bg-opacity-30 transition-all"

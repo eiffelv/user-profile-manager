@@ -6,7 +6,8 @@ import UserProfileList from './components/UserProfileList';
 import SearchBar from './components/SearchBar';
 import ConfirmModal from './components/ConfirmModal';
 import Notification from './components/Notification';
-import { UserPlus, Users } from 'lucide-react';
+import QRCodeModal from './components/QRCodeModal';
+import { UserPlus, Users, QrCode } from 'lucide-react';
 
 function App() {
   const [users, setUsers] = useState<User[]>([]);
@@ -21,6 +22,12 @@ function App() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  
+  // QR Code modal states
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrModalMode, setQrModalMode] = useState<'generate' | 'scan'>('generate');
+  const [qrUser, setQrUser] = useState<User | null>(null);
+  const [scannedUserData, setScannedUserData] = useState<UserFormData | null>(null);
   
   // Notifications
   const [notifications, setNotifications] = useState<NotificationType[]>([]);
@@ -96,6 +103,7 @@ function App() {
 
   const handleCreateNew = () => {
     setEditingUser(null);
+    setScannedUserData(null); // Clear any scanned data when creating new manually
     setShowForm(true);
   };
 
@@ -119,6 +127,7 @@ function App() {
         await loadUsers();
         setShowForm(false);
         setEditingUser(null);
+        setScannedUserData(null); // Clear scanned data after successful submit
         addNotification('success', response.message);
       } else {
         addNotification('error', response.message);
@@ -133,6 +142,7 @@ function App() {
   const handleFormCancel = () => {
     setShowForm(false);
     setEditingUser(null);
+    setScannedUserData(null); // Clear scanned data when form is cancelled
   };
 
   const handleDeleteClick = (user: User) => {
@@ -165,6 +175,34 @@ function App() {
     setUserToDelete(null);
   };
 
+  // QR Code handlers
+  const handleGenerateQR = (user: User) => {
+    setQrUser(user);
+    setQrModalMode('generate');
+    setShowQRModal(true);
+  };
+
+  const handleScanQR = () => {
+    setQrUser(null);
+    setQrModalMode('scan');
+    setShowQRModal(true);
+  };
+
+  const handleQRModalClose = () => {
+    setShowQRModal(false);
+    setQrUser(null);
+  };
+
+  const handleUserDataScanned = async (userData: UserFormData) => {
+    // Store the scanned data and open the form in create mode
+    setScannedUserData(userData);
+    setEditingUser(null); // Ensure we're in create mode
+    setShowQRModal(false); // Close QR modal
+    setShowForm(true); // Open form with scanned data
+    
+    addNotification('success', 'QR code scanned successfully! Review the data and save the profile.');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -181,13 +219,22 @@ function App() {
               </div>
             </div>
             
-            <button
-              onClick={handleCreateNew}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              <UserPlus className="w-4 h-4 mr-2" />
-              New Profile
-            </button>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleScanQR}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                <QrCode className="w-4 h-4 mr-2" />
+                Scan QR Code
+              </button>
+              <button
+                onClick={handleCreateNew}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                New Profile
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -209,6 +256,7 @@ function App() {
           onEdit={handleEdit}
           onDelete={handleDeleteClick}
           onCreateNew={handleCreateNew}
+          onGenerateQR={handleGenerateQR}
           isLoading={isLoading}
           searchQuery={searchQuery}
         />
@@ -217,7 +265,18 @@ function App() {
       {/* Modals */}
       {showForm && (
         <UserProfileForm
-          user={editingUser}
+          user={editingUser || (scannedUserData ? {
+            id: '',
+            fullName: scannedUserData.fullName,
+            email: scannedUserData.email,
+            phoneNumber: scannedUserData.phoneNumber,
+            bio: scannedUserData.bio,
+            avatarUrl: scannedUserData.avatarUrl,
+            dateOfBirth: scannedUserData.dateOfBirth,
+            location: scannedUserData.location,
+            createdAt: '',
+            updatedAt: ''
+          } as User : null)}
           onSubmit={handleFormSubmit}
           onCancel={handleFormCancel}
           isLoading={isFormLoading}
@@ -236,6 +295,15 @@ function App() {
           type="danger"
         />
       )}
+
+      {/* QR Code Modal */}
+      <QRCodeModal
+        isOpen={showQRModal}
+        onClose={handleQRModalClose}
+        user={qrUser || undefined}
+        onUserDataScanned={handleUserDataScanned}
+        mode={qrModalMode}
+      />
 
       {/* Notifications */}
       <div className="fixed top-4 right-4 space-y-2 z-50">

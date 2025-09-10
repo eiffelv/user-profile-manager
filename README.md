@@ -35,23 +35,23 @@ The existing application includes:
 3. **Frontend Integration**
    - Replaced mock API functions in `lib/api.ts` with real HTTP requests
    - Proper handling of loading states and error responses
-   - Ensured data persistence across browser refreshes
+   - Ensures data persistence across browser refreshes
 
 ### Task 2: QR Code Functionality
 
 #### Estimated Time: 45-60 minutes
 
 1. **QR Code Generation**
-   - Add a "Generate QR Code" button to user profile cards
-   - Generate QR codes containing user profile information (JSON format recommended)
-   - Display QR code in a modal or dedicated section
-   - Provide download functionality for the QR code image
+   - Added a "Generate QR Code" button to user profile cards
+   - Generates QR codes containing user profile information (Into JSON format)
+   - Displays QR code in a modal
+   - Provides download functionality for the QR code image
 
 2. **QR Code Reading**
-   - Implement QR code scanner/reader functionality
-   - Allow users to upload QR code images or use camera (if supported)
-   - Parse QR code data and populate the user profile form
-   - Handle invalid QR codes gracefully with appropriate error messages
+   - Implemented QR code scanner/reader functionality
+   - Allows users to upload QR code images or use camera (if available)
+   - Parses QR code data and populates the user profile form
+   - Handles invalid QR codes gracefully with appropriate error messages
 
 ### Task 3: Choose One Enhancement (Required)
 **Estimated Time: 30-45 minutes**

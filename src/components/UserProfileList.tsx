@@ -8,6 +8,7 @@ interface UserProfileListProps {
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;
   onCreateNew: () => void;
+  onGenerateQR?: (user: User) => void; // New prop for QR code generation
   isLoading?: boolean;
   searchQuery?: string;
 }
@@ -17,6 +18,7 @@ const UserProfileList: React.FC<UserProfileListProps> = ({
   onEdit,
   onDelete,
   onCreateNew,
+  onGenerateQR,
   isLoading = false,
   searchQuery = ''
 }) => {
@@ -100,6 +102,7 @@ const UserProfileList: React.FC<UserProfileListProps> = ({
             user={user}
             onEdit={onEdit}
             onDelete={onDelete}
+            onGenerateQR={onGenerateQR}
           />
         ))}
       </div>
