@@ -1,0 +1,30 @@
+{
+  "builds": [
+    {
+      "src": "server.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/server.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/dist/$1"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "server.ts": {
+      "maxDuration": 30
+    }
+  }
+}

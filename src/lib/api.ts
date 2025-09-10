@@ -7,8 +7,23 @@ import { apiCache } from '../utils/apiCache';
  * and provides consistent error handling and response formatting
  */
 
-// Base URL for all API endpoints
-const API_BASE_URL = 'http://localhost:3001/api';
+// Environment-based API URL configuration
+const getApiBaseUrl = (): string => {
+  // Check if we're in development mode
+  if (import.meta.env.DEV) {
+    return 'http://localhost:3001/api';
+  }
+  
+  // Check for custom API URL from environment variables
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  
+  // Fallback for production - replace with your actual API URL
+  return 'https://user-profile-manager-nine.vercel.app/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 class UserProfileAPI {
   
