@@ -4,6 +4,10 @@
 
 This is the submission for a basic User Profile Management application built with React and TypeScript. The app now has backend database integration and new functionalities implemented.
 
+## Live Server
+
+This submission is also [deployed live here](https://user-profile-manager-nine.vercel.app/)
+
 ## Given Application State
 
 The existing application includes:
