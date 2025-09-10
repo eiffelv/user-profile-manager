@@ -144,7 +144,7 @@ function App() {
       } else {
         addNotification('error', response.message);
       }
-    } catch (error) {
+    } catch {
       addNotification('error', 'Failed to delete user');
     }
   };

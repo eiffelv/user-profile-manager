@@ -1,4 +1,5 @@
 import { User, UserFormData, ApiResponse, PaginatedUsersResponse } from './types';
+import { apiCache } from '../utils/apiCache';
 
 /**
  * Real API service layer connecting to Express/Prisma backend
@@ -68,13 +69,28 @@ class UserProfileAPI {
    * @returns Promise<ApiResponse<PaginatedUsersResponse>> - Paginated user data with metadata
    */
   async getAllUsers(page: number = 1, limit: number = 20, search: string = ''): Promise<ApiResponse<PaginatedUsersResponse>> {
+    const cacheKey = `users_${page}_${limit}_${search}`;
+    
+    // Try cache first
+    const cached = apiCache.get<ApiResponse<PaginatedUsersResponse>>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
       search: search.trim()
     });
     
-    return this.fetchWithErrorHandling<PaginatedUsersResponse>(`${API_BASE_URL}/users?${params}`);
+    const result = await this.fetchWithErrorHandling<PaginatedUsersResponse>(`${API_BASE_URL}/users?${params}`);
+    
+    // Cache successful results for 2 minutes
+    if (result.success) {
+      apiCache.set(cacheKey, result, undefined, 2 * 60 * 1000);
+    }
+    
+    return result;
   }
 
   /**
@@ -111,10 +127,17 @@ class UserProfileAPI {
    * @returns Promise<ApiResponse<User>> - The created user object
    */
   async createUser(userData: UserFormData): Promise<ApiResponse<User>> {
-    return this.fetchWithErrorHandling<User>(`${API_BASE_URL}/users`, {
+    const result = await this.fetchWithErrorHandling<User>(`${API_BASE_URL}/users`, {
       method: 'POST',
       body: JSON.stringify(userData),
     });
+    
+    // Invalidate all user list caches after creation
+    if (result.success) {
+      apiCache.invalidatePattern('users_');
+    }
+    
+    return result;
   }
 
   /**
@@ -124,10 +147,17 @@ class UserProfileAPI {
    * @returns Promise<ApiResponse<User>> - The updated user object
    */
   async updateUser(id: string, userData: Partial<UserFormData>): Promise<ApiResponse<User>> {
-    return this.fetchWithErrorHandling<User>(`${API_BASE_URL}/users/${id}`, {
+    const result = await this.fetchWithErrorHandling<User>(`${API_BASE_URL}/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(userData),
     });
+    
+    // Invalidate all user list caches after update
+    if (result.success) {
+      apiCache.invalidatePattern('users_');
+    }
+    
+    return result;
   }
 
   /**
@@ -139,6 +169,11 @@ class UserProfileAPI {
     const response = await this.fetchWithErrorHandling<{ message: string }>(`${API_BASE_URL}/users/${id}`, {
       method: 'DELETE',
     });
+
+    // Invalidate all user list caches after deletion
+    if (response.success) {
+      apiCache.invalidatePattern('users_');
+    }
 
     // Transform the response to return a boolean for consistency
     return {

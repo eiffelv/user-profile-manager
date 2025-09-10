@@ -1,6 +1,7 @@
 import React from 'react';
 import { User } from '../lib/types';
 import { Edit, Trash2, Mail, Phone, MapPin, Calendar, User as UserIcon, QrCode } from 'lucide-react';
+import LazyImage from './LazyImage';
 
 interface UserProfileCardProps {
   user: User;
@@ -57,10 +58,15 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
       <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 h-24">
         <div className="absolute -bottom-8 left-6">
           {user.avatarUrl ? (
-            <img
+            <LazyImage
               src={user.avatarUrl}
               alt={`${user.fullName}'s avatar`}
               className="w-16 h-16 rounded-full border-4 border-white object-cover shadow-lg"
+              fallback={
+                <div className="w-16 h-16 rounded-full border-4 border-white bg-gray-200 flex items-center justify-center shadow-lg">
+                  <UserIcon className="w-8 h-8 text-gray-400" />
+                </div>
+              }
             />
           ) : (
             <div className="w-16 h-16 rounded-full border-4 border-white bg-gray-200 flex items-center justify-center shadow-lg">
