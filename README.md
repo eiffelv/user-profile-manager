@@ -70,11 +70,10 @@ The existing application includes:
 
 1. Clone this repository
 2. Install dependencies: `npm install`
-3. Set environment variable by creating .env file in the repository with the contents below
+3. Set the environment variable by creating .env file in the repository with the contents below
 4. Run database migrations: `npx prisma migrate dev`
-5. Start the application: `npm run dev`
-
-.env
+5. Start the backend: `npm run start:server`
+6. In another terminal, start the application: `npm run dev`
 
 ```bash
 DATABASE_URL=<link-given-in-email>
