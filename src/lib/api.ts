@@ -1,191 +1,158 @@
 import { User, UserFormData, ApiResponse } from './types';
 
-// Mock API service layer
-// Replace these functions with actual API calls when integrating with backend
+/**
+ * Real API service layer connecting to Express/Prisma backend
+ * This class handles all HTTP requests to the backend API
+ * and provides consistent error handling and response formatting
+ */
+
+// Base URL for all API endpoints
+const API_BASE_URL = 'http://localhost:3001/api';
 
 class UserProfileAPI {
-  private users: User[] = [];
-  private readonly STORAGE_KEY = 'userProfiles';
-
-  constructor() {
-    this.loadFromStorage();
-    if (this.users.length === 0) {
-      this.initializeMockData();
-    }
-  }
-
-  private loadFromStorage(): void {
+  
+  /**
+   * Generic fetch wrapper with consistent error handling
+   * @param url - The API endpoint URL
+   * @param options - Fetch options (method, body, headers, etc.)
+   * @returns Promise<ApiResponse<T>> - Standardized API response
+   */
+  private async fetchWithErrorHandling<T>(
+    url: string, 
+    options: RequestInit = {}
+  ): Promise<ApiResponse<T>> {
     try {
-      const stored = localStorage.getItem(this.STORAGE_KEY);
-      if (stored) {
-        this.users = JSON.parse(stored);
+      // Make HTTP request with default headers
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      });
+
+      // Parse JSON response
+      const data = await response.json();
+
+      // Handle HTTP error responses
+      if (!response.ok) {
+        return {
+          data: {} as T,
+          success: false,
+          message: data.error || `HTTP error! status: ${response.status}`
+        };
       }
+
+      // Return successful response
+      return {
+        data,
+        success: true,
+        message: 'Operation completed successfully'
+      };
     } catch (error) {
-      console.error('Error loading from storage:', error);
-      this.users = [];
+      // Handle network errors, JSON parsing errors, etc.
+      console.error('API Error:', error);
+      return {
+        data: {} as T,
+        success: false,
+        message: error instanceof Error ? error.message : 'An unexpected error occurred'
+      };
     }
   }
 
-  private saveToStorage(): void {
-    try {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.users));
-    } catch (error) {
-      console.error('Error saving to storage:', error);
-    }
-  }
-
-  private initializeMockData(): void {
-    const mockUsers: User[] = [
-      {
-        id: '1',
-        fullName: 'Sarah Johnson',
-        email: 'sarah.johnson@example.com',
-        phoneNumber: '+1 (555) 123-4567',
-        bio: 'Full-stack developer with a passion for creating intuitive user experiences. Love working with React, Node.js, and exploring new technologies.',
-        avatarUrl: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
-        dateOfBirth: '1990-03-15',
-        location: 'San Francisco, CA',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        fullName: 'Michael Chen',
-        email: 'michael.chen@example.com',
-        phoneNumber: '+1 (555) 987-6543',
-        bio: 'UX/UI Designer focused on creating meaningful digital experiences. Specializing in mobile-first design and accessibility.',
-        avatarUrl: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=400',
-        dateOfBirth: '1988-07-22',
-        location: 'New York, NY',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '3',
-        fullName: 'Emily Rodriguez',
-        email: 'emily.rodriguez@example.com',
-        phoneNumber: '+1 (555) 456-7890',
-        bio: 'Product manager with 8+ years of experience in tech startups. Passionate about user-centered product development.',
-        avatarUrl: 'https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg?auto=compress&cs=tinysrgb&w=400',
-        dateOfBirth: '1985-11-08',
-        location: 'Austin, TX',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: '4',
-        fullName: 'David Kim',
-        email: 'david.kim@example.com',
-        phoneNumber: '+1 (555) 321-0987',
-        bio: 'DevOps engineer specializing in cloud infrastructure and automation. AWS certified with expertise in Docker and Kubernetes.',
-        avatarUrl: 'https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg?auto=compress&cs=tinysrgb&w=400',
-        dateOfBirth: '1992-01-30',
-        location: 'Seattle, WA',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-    ];
-
-    this.users = mockUsers;
-    this.saveToStorage();
-  }
-
+  /**
+   * Retrieves all users from the database
+   * @returns Promise<ApiResponse<User[]>> - Array of all users
+   */
   async getAllUsers(): Promise<ApiResponse<User[]>> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    return {
-      data: [...this.users],
-      success: true,
-      message: 'Users retrieved successfully'
-    };
+    return this.fetchWithErrorHandling<User[]>(`${API_BASE_URL}/users`);
   }
 
+  /**
+   * Retrieves a specific user by their ID
+   * @param id - The unique identifier of the user
+   * @returns Promise<ApiResponse<User | null>> - User object or null if not found
+   */
   async getUserById(id: string): Promise<ApiResponse<User | null>> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-    const user = this.users.find(u => u.id === id);
-    return {
-      data: user || null,
-      success: !!user,
-      message: user ? 'User found' : 'User not found'
-    };
+    const response = await this.fetchWithErrorHandling<User>(`${API_BASE_URL}/users/${id}`);
+    
+    // Handle 404 Not Found responses specifically
+    if (!response.success && response.message.includes('404')) {
+      return {
+        data: null,
+        success: false,
+        message: 'User not found'
+      };
+    }
+    
+    return response;
   }
 
+  /**
+   * Creates a new user in the database
+   * @param userData - The user data from the form
+   * @returns Promise<ApiResponse<User>> - The created user object
+   */
   async createUser(userData: UserFormData): Promise<ApiResponse<User>> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const newUser: User = {
-      id: Date.now().toString(),
-      ...userData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    this.users.push(newUser);
-    this.saveToStorage();
-
-    return {
-      data: newUser,
-      success: true,
-      message: 'User created successfully'
-    };
+    return this.fetchWithErrorHandling<User>(`${API_BASE_URL}/users`, {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
   }
 
+  /**
+   * Updates an existing user in the database
+   * @param id - The unique identifier of the user to update
+   * @param userData - Partial user data containing only fields to update
+   * @returns Promise<ApiResponse<User>> - The updated user object
+   */
   async updateUser(id: string, userData: Partial<UserFormData>): Promise<ApiResponse<User>> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const userIndex = this.users.findIndex(u => u.id === id);
-    if (userIndex === -1) {
-      return {
-        data: {} as User,
-        success: false,
-        message: 'User not found'
-      };
-    }
-
-    this.users[userIndex] = {
-      ...this.users[userIndex],
-      ...userData,
-      updatedAt: new Date().toISOString(),
-    };
-
-    this.saveToStorage();
-
-    return {
-      data: this.users[userIndex],
-      success: true,
-      message: 'User updated successfully'
-    };
+    return this.fetchWithErrorHandling<User>(`${API_BASE_URL}/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
   }
 
+  /**
+   * Deletes a user from the database
+   * @param id - The unique identifier of the user to delete
+   * @returns Promise<ApiResponse<boolean>> - Success status of the deletion
+   */
   async deleteUser(id: string): Promise<ApiResponse<boolean>> {
-    await new Promise(resolve => setTimeout(resolve, 400));
+    const response = await this.fetchWithErrorHandling<{ message: string }>(`${API_BASE_URL}/users/${id}`, {
+      method: 'DELETE',
+    });
 
-    const userIndex = this.users.findIndex(u => u.id === id);
-    if (userIndex === -1) {
-      return {
-        data: false,
-        success: false,
-        message: 'User not found'
-      };
-    }
-
-    this.users.splice(userIndex, 1);
-    this.saveToStorage();
-
+    // Transform the response to return a boolean for consistency
     return {
-      data: true,
-      success: true,
-      message: 'User deleted successfully'
+      data: response.success,
+      success: response.success,
+      message: response.message
     };
   }
 
+  /**
+   * Searches for users based on a query string
+   * Currently implements client-side filtering after fetching all users
+   * @param query - Search term to match against user fields
+   * @returns Promise<ApiResponse<User[]>> - Array of matching users
+   * 
+   * @todo In production, implement server-side search for better performance
+   */
   async searchUsers(query: string): Promise<ApiResponse<User[]>> {
-    await new Promise(resolve => setTimeout(resolve, 250));
+    // Get all users first (in production, this would be a server-side search)
+    const allUsersResponse = await this.getAllUsers();
+    
+    // Return early if fetching users failed
+    if (!allUsersResponse.success) {
+      return allUsersResponse;
+    }
 
+    // Normalize query for case-insensitive searching
     const normalizedQuery = query.toLowerCase().trim();
-    const filteredUsers = this.users.filter(user => 
+    
+    // Filter users based on multiple fields
+    const filteredUsers = allUsersResponse.data.filter(user => 
       user.fullName.toLowerCase().includes(normalizedQuery) ||
       user.email.toLowerCase().includes(normalizedQuery) ||
       (user.location && user.location.toLowerCase().includes(normalizedQuery)) ||
@@ -200,4 +167,5 @@ class UserProfileAPI {
   }
 }
 
+// Export a singleton instance of the API class
 export const userAPI = new UserProfileAPI();

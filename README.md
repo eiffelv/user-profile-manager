@@ -17,17 +17,15 @@ The existing application includes:
 
 ## Tasks Completed
 
-### Task 1: Database Integration (Required)
-
-**Estimated Time: 60-90 minutes**
+### Task 1: Database Integration
 
 1. **Set up PostgreSQL database**
-   - Create a PostgreSQL database (local or cloud-based)
-   - Implement the Users table schema (structure provided in comments)
+   - PostgreSQL database created in the cloud (Using Prisma Postgres)
+   - Implemented the Users table schema
 
 2. **Backend API Development**
-   - Choose and implement an ORM framework (Prisma, TypeORM, or Sequelize recommended)
-   - Create API endpoints for CRUD operations:
+   - Prisma is used for the ORM framework with the project set up with Prisma schema already
+   - Created API endpoints for CRUD operations with error-handling:
      - `GET /api/users` - Retrieve all users
      - `GET /api/users/:id` - Retrieve a specific user
      - `POST /api/users` - Create a new user
@@ -35,12 +33,13 @@ The existing application includes:
      - `DELETE /api/users/:id` - Delete a user
 
 3. **Frontend Integration**
-   - Replace mock API functions in `lib/api.ts` with real HTTP requests
-   - Handle loading states and error responses appropriately
-   - Ensure data persistence across browser refreshes
+   - Replaced mock API functions in `lib/api.ts` with real HTTP requests
+   - Proper handling of loading states and error responses
+   - Ensured data persistence across browser refreshes
 
-### Task 2: QR Code Functionality (Required)
-**Estimated Time: 45-60 minutes**
+### Task 2: QR Code Functionality
+
+#### Estimated Time: 45-60 minutes
 
 1. **QR Code Generation**
    - Add a "Generate QR Code" button to user profile cards
@@ -82,6 +81,7 @@ Select ONE of the following enhancements to implement:
 1. Clone this repository
 2. Install dependencies: `npm install`
 3. Set environment variable by creating .env file in the repository with the contents below
+   - `DATABASE_URL=<link-given-in-email>`
 4. Run database migrations: `npx prisma migrate dev`
 5. Start the application: `npm run dev`
 

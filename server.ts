@@ -1,17 +1,27 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 
+/**
+ * Express server with Prisma ORM for User Profile Management
+ * Provides RESTful API endpoints for CRUD operations on users
+ */
+
 const app = express();
 const prisma = new PrismaClient();
 
-// Middleware
+// ===== MIDDLEWARE SETUP =====
+
 // Parses incoming JSON requests and puts the parsed data in req.body
 app.use(express.json());
-// Used to allow cross-origin requests between frontend and backend
+
+// CORS (Cross-Origin Resource Sharing) middleware
+// Allows frontend (localhost:5173) to communicate with backend (localhost:3001)
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Origin', '*'); // Allow all origins (dev only)
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  
+  // Handle preflight OPTIONS requests for browsers
   if (req.method === 'OPTIONS') {
     res.sendStatus(200);
   } else {
@@ -19,8 +29,13 @@ app.use((req, res, next) => {
   }
 });
 
-// Get all users
-// Fetches all users from the database, ordered by creation date in descending order
+// ===== API ROUTES =====
+
+/**
+ * GET /api/users
+ * Retrieves all users from the database
+ * @returns {User[]} Array of user objects ordered by creation date (newest first)
+ */
 app.get('/api/users', async (req, res) => {
   try {
     const users = await prisma.user.findMany({
@@ -33,16 +48,23 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-// Get user by ID
+/**
+ * GET /api/users/:id
+ * Retrieves a specific user by their ID
+ * @param {string} id - UUID of the user
+ * @returns {User} User object or 404 if not found
+ */
 app.get('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const user = await prisma.user.findUnique({
       where: { id },
     });
+    
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
+    
     res.json(user);
   } catch (error) {
     console.error('Error fetching user:', error);
@@ -50,12 +72,17 @@ app.get('/api/users/:id', async (req, res) => {
   }
 });
 
-// Create user
+/**
+ * POST /api/users
+ * Creates a new user in the database
+ * @body {UserFormData} User data (fullName and email are required)
+ * @returns {User} Created user object with generated ID and timestamps
+ */
 app.post('/api/users', async (req, res) => {
   try {
     const { fullName, email, phoneNumber, bio, avatarUrl, dateOfBirth, location } = req.body;
     
-    // Basic validation
+    // Basic validation - required fields
     if (!fullName || !email) {
       return res.status(400).json({ error: 'Full name and email are required' });
     }
@@ -71,9 +98,12 @@ app.post('/api/users', async (req, res) => {
         location,
       },
     });
+    
     res.status(201).json(user);
   } catch (error) {
     console.error('Error creating user:', error);
+    
+    // Handle unique constraint violation (duplicate email)
     if (error.code === 'P2002') {
       res.status(400).json({ error: 'Email already exists' });
     } else {
@@ -82,13 +112,19 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
-// Update user
+/**
+ * PUT /api/users/:id
+ * Updates an existing user in the database
+ * @param {string} id - UUID of the user to update
+ * @body {Partial<UserFormData>} Updated user data
+ * @returns {User} Updated user object
+ */
 app.put('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { fullName, email, phoneNumber, bio, avatarUrl, dateOfBirth, location } = req.body;
     
-    // Basic validation
+    // Basic validation - required fields
     if (!fullName || !email) {
       return res.status(400).json({ error: 'Full name and email are required' });
     }
@@ -105,9 +141,12 @@ app.put('/api/users/:id', async (req, res) => {
         location,
       },
     });
+    
     res.json(user);
   } catch (error) {
     console.error('Error updating user:', error);
+    
+    // Handle specific Prisma error codes
     if (error.code === 'P2025') {
       res.status(404).json({ error: 'User not found' });
     } else if (error.code === 'P2002') {
@@ -118,16 +157,25 @@ app.put('/api/users/:id', async (req, res) => {
   }
 });
 
-// Delete user
+/**
+ * DELETE /api/users/:id
+ * Deletes a user from the database
+ * @param {string} id - UUID of the user to delete
+ * @returns {Object} Success message or error
+ */
 app.delete('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    
     await prisma.user.delete({
       where: { id },
     });
+    
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Error deleting user:', error);
+    
+    // Handle user not found error
     if (error.code === 'P2025') {
       res.status(404).json({ error: 'User not found' });
     } else {
@@ -136,17 +184,29 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 });
 
+// ===== SERVER STARTUP =====
+
+// ===== SERVER STARTUP =====
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`📊 Database connected via Prisma`);
+  console.log(`🌐 API available at http://localhost:${PORT}/api`);
 });
 
-// Graceful shutdown
+// ===== GRACEFUL SHUTDOWN =====
+
+// Handle graceful shutdown to properly close database connections
 process.on('beforeExit', async () => {
+  console.log('🔄 Disconnecting from database...');
   await prisma.$disconnect();
 });
 
+// Handle Ctrl+C (SIGINT) for graceful shutdown
 process.on('SIGINT', async () => {
+  console.log('\n🛑 Received SIGINT. Graceful shutdown...');
   await prisma.$disconnect();
+  console.log('✅ Database disconnected. Exiting...');
   process.exit(0);
 });
