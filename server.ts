@@ -33,15 +33,61 @@ app.use((req, res, next) => {
 
 /**
  * GET /api/users
- * Retrieves all users from the database
- * @returns {User[]} Array of user objects ordered by creation date (newest first)
+ * Retrieves users from the database with pagination support
+ * Query parameters:
+ * - page: Page number (default: 1)
+ * - limit: Number of users per page (default: 20, max: 100)
+ * - search: Search query for name/email filtering
+ * @returns {Object} Paginated user data with metadata
  */
 app.get('/api/users', async (req, res) => {
   try {
-    const users = await prisma.user.findMany({
-      orderBy: { createdAt: 'desc' }
+    // Parse query parameters with defaults
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+    const search = (req.query.search as string)?.trim() || '';
+    
+    // Calculate offset for pagination
+    const offset = (page - 1) * limit;
+    
+    // Build search filter
+    const searchFilter = search ? {
+      OR: [
+        { fullName: { contains: search, mode: 'insensitive' as const } },
+        { email: { contains: search, mode: 'insensitive' as const } },
+        { location: { contains: search, mode: 'insensitive' as const } }
+      ]
+    } : {};
+    
+    // Get total count for pagination metadata
+    const totalUsers = await prisma.user.count({
+      where: searchFilter
     });
-    res.json(users);
+    
+    // Get paginated users
+    const users = await prisma.user.findMany({
+      where: searchFilter,
+      orderBy: { createdAt: 'desc' },
+      skip: offset,
+      take: limit
+    });
+    
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalUsers / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
+    
+    res.json({
+      data: users,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalUsers,
+        limit,
+        hasNextPage,
+        hasPrevPage
+      }
+    });
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({ error: 'Failed to fetch users' });

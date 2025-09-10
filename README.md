@@ -53,35 +53,20 @@ The existing application includes:
    - Parses QR code data and populates the user profile form
    - Handles invalid QR codes gracefully with appropriate error messages
 
-### Task 3: Choose One Enhancement (Required)
-**Estimated Time: 30-45 minutes**
-
-Select ONE of the following enhancements to implement:
+### Task 3: Choosen One Enhancement
 
 #### Option A: Performance Optimization
+
 - Implement pagination for the user list (20 users per page)
 - Add debounced search functionality
 - Optimize avatar image handling (compression, lazy loading)
 - Add caching strategies for API responses
-
-#### Option B: Security Improvements
-- Implement input sanitization and validation
-- Add rate limiting to API endpoints
-- Implement basic authentication/authorization
-- Add CORS configuration and security headers
-
-#### Option C: Advanced Features
-- Add user categories or tags
-- Implement export functionality (CSV/JSON)
-- Add advanced search filters (by location, date range, etc.)
-- Implement user profile comparison feature
 
 ## Setup Instructions
 
 1. Clone this repository
 2. Install dependencies: `npm install`
 3. Set environment variable by creating .env file in the repository with the contents below
-   - `DATABASE_URL=<link-given-in-email>`
 4. Run database migrations: `npx prisma migrate dev`
 5. Start the application: `npm run dev`
 
@@ -110,74 +95,9 @@ CREATE TABLE users (
 );
 ```
 
-### Recommended Libraries
+### Libraries Used
 
-- **ORM**: Prisma, TypeORM, or Sequelize
-- **QR Code**: `qrcode` (generation), `qr-scanner` or `jsqr` (reading)
-- **File Upload**: `multer` (if implementing file uploads)
-- **HTTP Client**: `axios` or `fetch`
-
-## Evaluation Criteria
-
-### Code Quality (25%)
-
-- Clean, readable, and well-structured code
-- Proper error handling and edge cases
-- Consistent code style and TypeScript usage
-- Meaningful commit messages
-
-### Functionality (35%)
-
-- All required features working correctly
-- Database integration properly implemented
-- QR code features functioning as expected
-- Chosen enhancement properly implemented
-
-### Technical Implementation (25%)
-
-- Appropriate use of ORM and database operations
-- Efficient API design and data flow
-- Proper state management and data synchronization
-- Good separation of concerns
-
-### User Experience (15%)
-
-- Intuitive and responsive interface
-- Appropriate loading states and error messages
-- Smooth user interactions
-- Accessibility considerations
-
-## Submission Guidelines
-
-1. **Code Repository**
-   - Push your code to a GitHub repository
-   - Include a comprehensive README.md with:
-     - Setup instructions
-     - Database schema and migration commands
-     - API documentation
-     - Features implemented and design decisions
-
-2. **Documentation**
-   - Comment your code appropriately
-   - Explain any architectural decisions
-   - Include environment setup instructions
-   - Document any assumptions made
-
-3. **Testing (Optional)**
-   - Include basic tests if time permits
-   - Focus on critical functionality
-   - Document test coverage
-
-## Questions?
-
-If you have any clarification questions about the requirements, please document your assumptions in your README.md file and proceed with your best interpretation.
-
-## Time Management Tips
-
-- Start with database setup and basic API endpoints
-- Implement QR code functionality next
-- Leave the enhancement task for last
-- Focus on working functionality over perfect code
-- Don't over-engineer - simple solutions are preferred
-
-Good luck! We're excited to see your implementation.
+- **ORM**: Prisma,
+- **QR Code**: `qrcode` (generation), `qr-scanner` (reading)
+- **File Upload**: Not implemented
+- **HTTP Client**: `fetch`

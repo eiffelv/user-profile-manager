@@ -1,4 +1,4 @@
-import { User, UserFormData, ApiResponse } from './types';
+import { User, UserFormData, ApiResponse, PaginatedUsersResponse } from './types';
 
 /**
  * Real API service layer connecting to Express/Prisma backend
@@ -61,11 +61,28 @@ class UserProfileAPI {
   }
 
   /**
-   * Retrieves all users from the database
+   * Retrieves paginated users from the database
+   * @param page - Page number (1-based, default: 1)
+   * @param limit - Number of users per page (default: 20)
+   * @param search - Optional search query for filtering
+   * @returns Promise<ApiResponse<PaginatedUsersResponse>> - Paginated user data with metadata
+   */
+  async getAllUsers(page: number = 1, limit: number = 20, search: string = ''): Promise<ApiResponse<PaginatedUsersResponse>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      search: search.trim()
+    });
+    
+    return this.fetchWithErrorHandling<PaginatedUsersResponse>(`${API_BASE_URL}/users?${params}`);
+  }
+
+  /**
+   * Retrieves all users without pagination (for backward compatibility)
    * @returns Promise<ApiResponse<User[]>> - Array of all users
    */
-  async getAllUsers(): Promise<ApiResponse<User[]>> {
-    return this.fetchWithErrorHandling<User[]>(`${API_BASE_URL}/users`);
+  async getAllUsersUnpaginated(): Promise<ApiResponse<User[]>> {
+    return this.fetchWithErrorHandling<User[]>(`${API_BASE_URL}/users?limit=1000`);
   }
 
   /**
@@ -133,37 +150,14 @@ class UserProfileAPI {
 
   /**
    * Searches for users based on a query string
-   * Currently implements client-side filtering after fetching all users
+   * Uses server-side search with pagination support
    * @param query - Search term to match against user fields
-   * @returns Promise<ApiResponse<User[]>> - Array of matching users
-   * 
-   * @todo In production, implement server-side search for better performance
+   * @param page - Page number (default: 1)
+   * @param limit - Number of users per page (default: 20)
+   * @returns Promise<ApiResponse<PaginatedUsersResponse>> - Paginated search results
    */
-  async searchUsers(query: string): Promise<ApiResponse<User[]>> {
-    // Get all users first (in production, this would be a server-side search)
-    const allUsersResponse = await this.getAllUsers();
-    
-    // Return early if fetching users failed
-    if (!allUsersResponse.success) {
-      return allUsersResponse;
-    }
-
-    // Normalize query for case-insensitive searching
-    const normalizedQuery = query.toLowerCase().trim();
-    
-    // Filter users based on multiple fields
-    const filteredUsers = allUsersResponse.data.filter(user => 
-      user.fullName.toLowerCase().includes(normalizedQuery) ||
-      user.email.toLowerCase().includes(normalizedQuery) ||
-      (user.location && user.location.toLowerCase().includes(normalizedQuery)) ||
-      (user.bio && user.bio.toLowerCase().includes(normalizedQuery))
-    );
-
-    return {
-      data: filteredUsers,
-      success: true,
-      message: `Found ${filteredUsers.length} users`
-    };
+  async searchUsers(query: string, page: number = 1, limit: number = 20): Promise<ApiResponse<PaginatedUsersResponse>> {
+    return this.getAllUsers(page, limit, query);
   }
 }
 

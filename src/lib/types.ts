@@ -76,6 +76,28 @@ export interface ApiResponse<T> {
 }
 
 /**
+ * Pagination metadata for paginated API responses
+ * Contains information about current page, total pages, etc.
+ */
+export interface PaginationInfo {
+  currentPage: number;           // Current page number (1-based)
+  totalPages: number;            // Total number of pages
+  totalUsers: number;            // Total number of users across all pages
+  limit: number;                 // Number of users per page
+  hasNextPage: boolean;          // Whether there's a next page available
+  hasPrevPage: boolean;          // Whether there's a previous page available
+}
+
+/**
+ * Paginated response structure for user lists
+ * Contains both user data and pagination metadata
+ */
+export interface PaginatedUsersResponse {
+  data: User[];                  // Array of users for current page
+  pagination: PaginationInfo;    // Pagination metadata
+}
+
+/**
  * Notification types for user feedback
  * Used to categorize different types of user notifications
  */

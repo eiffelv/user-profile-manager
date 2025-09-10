@@ -1,0 +1,380 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { User, UserFormData, Notification as NotificationType, PaginationInfo } from './lib/types';
+import { userAPI } from './lib/api';
+import { useDebounce } from './hooks/useDebounce';
+import UserProfileForm from './components/UserProfileForm';
+import UserProfileList from './components/UserProfileList';
+import SearchBar from './components/SearchBar';
+import ConfirmModal from './components/ConfirmModal';
+import Notification from './components/Notification';
+import QRCodeModal from './components/QRCodeModal';
+import { UserPlus, Users, QrCode } from 'lucide-react';
+
+function App() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFormLoading, setIsFormLoading] = useState(false);
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    currentPage: 1,
+    totalPages: 1,
+    totalUsers: 0,
+    limit: 20,
+    hasNextPage: false,
+    hasPrevPage: false
+  });
+  
+  // Debounced search query to avoid excessive API calls
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  
+  // Modal states
+  const [showForm, setShowForm] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  
+  // QR Code modal states
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrModalMode, setQrModalMode] = useState<'generate' | 'scan'>('generate');
+  const [qrUser, setQrUser] = useState<User | null>(null);
+  const [scannedUserData, setScannedUserData] = useState<UserFormData | null>(null);
+  
+  // Notifications
+  const [notifications, setNotifications] = useState<NotificationType[]>([]);
+
+  const loadUsers = useCallback(async (page: number = 1, search: string = '') => {
+    try {
+      setIsLoading(true);
+      const response = await userAPI.getAllUsers(page, 20, search);
+      
+      if (response.success) {
+        setUsers(response.data.data);
+        setPagination(response.data.pagination);
+      } else {
+        addNotification('error', 'Failed to load users');
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
+      addNotification('error', 'Error loading users');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1); // Reset to first page when searching
+  }, []);
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
+  const addNotification = useCallback((type: NotificationType['type'], message: string, duration?: number) => {
+    const notification: NotificationType = {
+      id: Date.now().toString(),
+      type,
+      message,
+      duration
+    };
+    
+    setNotifications(prev => [...prev, notification]);
+  }, []);
+
+  // Load users with pagination when component mounts or when page/search changes
+  useEffect(() => {
+    loadUsers(currentPage, debouncedSearchQuery);
+  }, [currentPage, debouncedSearchQuery, loadUsers]);
+
+  // Load users on component mount
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  // Update filtered users when users or search query changes
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredUsers(users);
+    } else {
+      handleSearch(searchQuery);
+    }
+  }, [users, searchQuery]);
+
+  const loadUsers = async () => {
+    try {
+      setIsLoading(true);
+      const response = await userAPI.getAllUsers();
+      
+      if (response.success) {
+        setUsers(response.data);
+      } else {
+        addNotification('error', 'Failed to load users');
+      }
+    } catch (error) {
+      addNotification('error', 'Error loading users');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSearch = useCallback(async (query: string) => {
+    setSearchQuery(query);
+    
+    if (!query.trim()) {
+      setFilteredUsers(users);
+      setIsSearchLoading(false);
+      return;
+    }
+
+    try {
+      setIsSearchLoading(true);
+      const response = await userAPI.searchUsers(query);
+      
+      if (response.success) {
+        setFilteredUsers(response.data);
+      }
+    } catch (error) {
+      addNotification('error', 'Error searching users');
+    } finally {
+      setIsSearchLoading(false);
+    }
+  }, [users]);
+
+  const addNotification = (type: NotificationType['type'], message: string, duration?: number) => {
+    const notification: NotificationType = {
+      id: Date.now().toString(),
+      type,
+      message,
+      duration
+    };
+    
+    setNotifications(prev => [...prev, notification]);
+  };
+
+  const removeNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const handleCreateNew = () => {
+    setEditingUser(null);
+    setScannedUserData(null); // Clear any scanned data when creating new manually
+    setShowForm(true);
+  };
+
+  const handleEdit = (user: User) => {
+    setEditingUser(user);
+    setShowForm(true);
+  };
+
+  const handleFormSubmit = async (formData: UserFormData) => {
+    try {
+      setIsFormLoading(true);
+      
+      let response;
+      if (editingUser) {
+        response = await userAPI.updateUser(editingUser.id, formData);
+      } else {
+        response = await userAPI.createUser(formData);
+      }
+
+      if (response.success) {
+        await loadUsers();
+        setShowForm(false);
+        setEditingUser(null);
+        setScannedUserData(null); // Clear scanned data after successful submit
+        addNotification('success', response.message);
+      } else {
+        addNotification('error', response.message);
+      }
+    } catch (error) {
+      addNotification('error', `Error ${editingUser ? 'updating' : 'creating'} user`);
+    } finally {
+      setIsFormLoading(false);
+    }
+  };
+
+  const handleFormCancel = () => {
+    setShowForm(false);
+    setEditingUser(null);
+    setScannedUserData(null); // Clear scanned data when form is cancelled
+  };
+
+  const handleDeleteClick = (user: User) => {
+    setUserToDelete(user);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return;
+
+    try {
+      const response = await userAPI.deleteUser(userToDelete.id);
+      
+      if (response.success) {
+        await loadUsers();
+        addNotification('success', response.message);
+      } else {
+        addNotification('error', response.message);
+      }
+    } catch (error) {
+      addNotification('error', 'Error deleting user');
+    } finally {
+      setShowDeleteModal(false);
+      setUserToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setUserToDelete(null);
+  };
+
+  // QR Code handlers
+  const handleGenerateQR = (user: User) => {
+    setQrUser(user);
+    setQrModalMode('generate');
+    setShowQRModal(true);
+  };
+
+  const handleScanQR = () => {
+    setQrUser(null);
+    setQrModalMode('scan');
+    setShowQRModal(true);
+  };
+
+  const handleQRModalClose = () => {
+    setShowQRModal(false);
+    setQrUser(null);
+  };
+
+  const handleUserDataScanned = async (userData: UserFormData) => {
+    // Store the scanned data and open the form in create mode
+    setScannedUserData(userData);
+    setEditingUser(null); // Ensure we're in create mode
+    setShowQRModal(false); // Close QR modal
+    setShowForm(true); // Open form with scanned data
+    
+    addNotification('success', 'QR code scanned successfully! Review the data and save the profile.');
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-3">
+              <div className="bg-blue-600 p-2 rounded-lg">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">User Profile Manager</h1>
+                <p className="text-sm text-gray-500">Manage user profiles with ease</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleScanQR}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              >
+                <QrCode className="w-4 h-4 mr-2" />
+                Scan QR Code
+              </button>
+              <button
+                onClick={handleCreateNew}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                New Profile
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Search Bar */}
+        <div className="mb-8">
+          <SearchBar
+            onSearch={handleSearch}
+            placeholder="Search by name, email, location, or bio..."
+            isLoading={isSearchLoading}
+          />
+        </div>
+
+        {/* User List */}
+        <UserProfileList
+          users={filteredUsers}
+          onEdit={handleEdit}
+          onDelete={handleDeleteClick}
+          onCreateNew={handleCreateNew}
+          onGenerateQR={handleGenerateQR}
+          isLoading={isLoading}
+          searchQuery={searchQuery}
+        />
+      </main>
+
+      {/* Modals */}
+      {showForm && (
+        <UserProfileForm
+          user={editingUser || (scannedUserData ? {
+            id: '',
+            fullName: scannedUserData.fullName,
+            email: scannedUserData.email,
+            phoneNumber: scannedUserData.phoneNumber,
+            bio: scannedUserData.bio,
+            avatarUrl: scannedUserData.avatarUrl,
+            dateOfBirth: scannedUserData.dateOfBirth,
+            location: scannedUserData.location,
+            createdAt: '',
+            updatedAt: ''
+          } as User : null)}
+          onSubmit={handleFormSubmit}
+          onCancel={handleFormCancel}
+          isLoading={isFormLoading}
+        />
+      )}
+
+      {showDeleteModal && userToDelete && (
+        <ConfirmModal
+          isOpen={showDeleteModal}
+          title="Delete Profile"
+          message={`Are you sure you want to delete ${userToDelete.fullName}'s profile? This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+          type="danger"
+        />
+      )}
+
+      {/* QR Code Modal */}
+      <QRCodeModal
+        isOpen={showQRModal}
+        onClose={handleQRModalClose}
+        user={qrUser || undefined}
+        onUserDataScanned={handleUserDataScanned}
+        mode={qrModalMode}
+      />
+
+      {/* Notifications */}
+      <div className="fixed top-4 right-4 space-y-2 z-50">
+        {notifications.map((notification) => (
+          <Notification
+            key={notification.id}
+            notification={notification}
+            onClose={removeNotification}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default App;
