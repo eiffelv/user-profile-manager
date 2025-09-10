@@ -18,13 +18,5 @@
       "src": "/(.*)",
       "dest": "/dist/$1"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "functions": {
-    "server.ts": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }
