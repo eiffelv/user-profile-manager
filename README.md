@@ -1,10 +1,13 @@
-# Take-Home Assignment
+# user-profile-manager by Eiffel Valentino
 
 ## Overview
-You have been provided with a basic User Profile Management application built with React and TypeScript. Your task is to enhance this application by implementing backend database integration and adding new functionality. This assignment should take approximately 2-4 hours to complete.
 
-## Current Application State
+This is the submission for a basic User Profile Management application built with React and TypeScript. The app now has backend database integration and new functionalities implemented.
+
+## Given Application State
+
 The existing application includes:
+
 - ✅ Frontend React components for user profile CRUD operations
 - ✅ Mock data and local state management
 - ✅ Modern UI with Tailwind CSS
@@ -12,9 +15,10 @@ The existing application includes:
 - ✅ Basic form validation and error handling
 - ✅ Responsive design
 
-## Your Tasks
+## Tasks Completed
 
 ### Task 1: Database Integration (Required)
+
 **Estimated Time: 60-90 minutes**
 
 1. **Set up PostgreSQL database**
@@ -73,9 +77,24 @@ Select ONE of the following enhancements to implement:
 - Add advanced search filters (by location, date range, etc.)
 - Implement user profile comparison feature
 
+## Setup Instructions
+
+1. Clone this repository
+2. Install dependencies: `npm install`
+3. Set environment variable by creating .env file in the repository with the contents below
+4. Run database migrations: `npx prisma migrate dev`
+5. Start the application: `npm run dev`
+
+.env
+
+```bash
+DATABASE_URL=<link-given-in-email>
+```
+
 ## Technical Requirements
 
 ### Database Schema
+
 ```sql
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -92,6 +111,7 @@ CREATE TABLE users (
 ```
 
 ### Recommended Libraries
+
 - **ORM**: Prisma, TypeORM, or Sequelize
 - **QR Code**: `qrcode` (generation), `qr-scanner` or `jsqr` (reading)
 - **File Upload**: `multer` (if implementing file uploads)
@@ -100,24 +120,28 @@ CREATE TABLE users (
 ## Evaluation Criteria
 
 ### Code Quality (25%)
+
 - Clean, readable, and well-structured code
 - Proper error handling and edge cases
 - Consistent code style and TypeScript usage
 - Meaningful commit messages
 
 ### Functionality (35%)
+
 - All required features working correctly
 - Database integration properly implemented
 - QR code features functioning as expected
 - Chosen enhancement properly implemented
 
 ### Technical Implementation (25%)
+
 - Appropriate use of ORM and database operations
 - Efficient API design and data flow
 - Proper state management and data synchronization
 - Good separation of concerns
 
 ### User Experience (15%)
+
 - Intuitive and responsive interface
 - Appropriate loading states and error messages
 - Smooth user interactions
@@ -143,14 +167,6 @@ CREATE TABLE users (
    - Include basic tests if time permits
    - Focus on critical functionality
    - Document test coverage
-
-## Setup Instructions
-
-1. Clone this repository
-2. Install dependencies: `npm install`
-3. Start the development server: `npm run dev`
-4. Set up your database connection
-5. Begin implementation
 
 ## Questions?
 
